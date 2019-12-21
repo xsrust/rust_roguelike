@@ -1,3 +1,4 @@
+use std::cmp;
 use tcod::colors::*;
 use tcod::console::*;
 
@@ -71,7 +72,7 @@ fn main() {
     let mut tcod = Tcod { root, con };
 
     // Initilize Player Properties
-    let player = Object::new(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, '@', WHITE);
+    let player = Object::new(25, 23, '@', WHITE);
     let npc = Object::new(SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2, '@', YELLOW);
 
     // List of objects in the game, currently player, npc
@@ -130,6 +131,18 @@ impl Tile {
     }
 }
 
+/// Functinos for the rectangle structure
+impl Rect {
+    pub fn new(x: i32, y: i32, w: i32, h: i32) -> Self {
+        Rect {
+            x1: x,
+            x2: x + w,
+            y1: y,
+            y2: y + h,
+        }
+    }
+}
+
 /// render all of the things
 fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
     tcod.con.clear(); // clean console
@@ -166,11 +179,40 @@ fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
 /// Create our Map object
 fn make_map() -> Map {
     // fill map with "unblocked" tiles
-    let mut map = vec![vec![Tile::empty(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
-    // place two pillars to test the map
-    map[30][22] = Tile::wall();
-    map[50][22] = Tile::wall();
+    let mut map = vec![vec![Tile::wall(); MAP_HEIGHT as usize]; MAP_WIDTH as usize];
+    // create the rooms
+    let room1 = Rect::new(20, 15, 10, 15);
+    let room2 = Rect::new(50, 15, 10, 15);
+    create_room(room1, &mut map);
+    create_room(room2, &mut map);
+    create_h_tunnel(25, 55, 23, &mut map);
+
     map
+}
+
+/// Create a room within our map
+fn create_room(room: Rect, map: &mut Map) {
+    // go through the tiles within the rectangle and make them passable
+    for x in (room.x1 + 1)..room.x2 {
+        for y in (room.y1 + 1)..room.y2 {
+            map[x as usize][y as usize] = Tile::empty();
+        }
+    }
+}
+
+/// Create a horizontal tunnel between two rooms
+fn create_h_tunnel(x1: i32, x2: i32, y: i32, map: &mut Map) {
+    // horizontal tunnel.  `min()` and `map()` are used in case `x1 > x2`
+    for x in cmp::min(x1, x2)..(cmp::max(x1, x2) + 1) {
+        map[x as usize][y as usize] = Tile::empty();
+    }
+}
+
+fn create_v_tunnel(y1: i32, y2: i32, x: i32, map: &mut Map) {
+    // vertical tunnel
+    for y in cmp::min(y1, y2)..(cmp::max(y1, y2) + 1) {
+        map[x as usize][y as usize] = Tile::empty();
+    }
 }
 
 /// Handle Key inputs from the user
