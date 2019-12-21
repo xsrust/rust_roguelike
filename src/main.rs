@@ -60,6 +60,7 @@ struct Object {
 #[derive(Clone, Copy, Debug)]
 struct Tile {
     blocked: bool,
+    explored: bool,
     block_sight: bool,
 }
 
@@ -101,7 +102,7 @@ fn main() {
 
     // List of objects in the game, currently player, npc
     let mut objects = [player, npc];
-    let game = Game {
+    let mut game = Game {
         map: make_map(&mut objects[0]),
     };
 
@@ -120,10 +121,14 @@ fn main() {
     let mut previous_player_position = (-1, -1);
 
     while !tcod.root.window_closed() {
+        // clear the screen of the previous frame
+        tcod.con.clear();
         // handle the updating of the view port
         // render the screen
         let fov_recompute = previous_player_position != (objects[0].x, objects[0].y);
-        render_all(&mut tcod, &game, &objects, fov_recompute);
+        render_all(&mut tcod, &mut game, &objects, fov_recompute);
+
+        tcod.root.flush();
 
         // Key handleing w/ exit
         let player = &mut objects[0];
@@ -162,6 +167,7 @@ impl Tile {
     pub fn empty() -> Self {
         Tile {
             blocked: false,
+            explored: false,
             block_sight: false,
         }
     }
@@ -169,6 +175,7 @@ impl Tile {
     pub fn wall() -> Self {
         Tile {
             blocked: true,
+            explored: false,
             block_sight: true,
         }
     }
@@ -203,8 +210,7 @@ impl Rect {
 /********** GENERIC FUNCTIONS ***********/
 
 /// render all of the things
-fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object], fov_recompute: bool) {
-    tcod.con.clear(); // clean console
+fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recompute: bool) {
 
     if fov_recompute {
         // recompute FOV if needed (the player moved or something)
@@ -231,12 +237,17 @@ fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object], fov_recompute: b
                 (true, true) => COLOR_LIGHT_WALL,
                 (true, false) => COLOR_LIGHT_GROUND,
             };
-            tcod.con
-                .set_char_background(x, y, color, BackgroundFlag::Set);
+            let explored = &mut game.map[x as usize][y as usize].explored;
+            if visible {
+                // since it's visible, explore it
+                *explored = true;
+            }
+            if *explored {
+                tcod.con
+                    .set_char_background(x, y, color, BackgroundFlag::Set);
+            }
         }
     }
-
-    tcod.root.flush(); // clean root console to write to
                        // blit the contents of "con" onto the root console and present it
     blit(
         &tcod.con,
