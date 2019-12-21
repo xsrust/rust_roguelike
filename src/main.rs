@@ -76,7 +76,7 @@ fn main() {
 
     // List of objects in the game, currently player, npc
     let mut objects = [player, npc];
-    let game = Game { map: make_map()};
+    let game = Game { map: make_map() };
 
     while !tcod.root.window_closed() {
         // handle the updating of the view port
@@ -130,12 +130,10 @@ impl Tile {
     }
 }
 
-
-
 /// render all of the things
 fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
     tcod.con.clear(); // clean console
-    // Draw all of our objects on the screen
+                      // Draw all of our objects on the screen
     for object in objects {
         object.draw(&mut tcod.con);
     }
@@ -144,14 +142,16 @@ fn render_all(tcod: &mut Tcod, game: &Game, objects: &[Object]) {
         for x in 0..MAP_WIDTH {
             let wall = game.map[x as usize][y as usize].block_sight;
             if wall {
-                tcod.con.set_char_background(x,y,COLOR_DARK_WALL, BackgroundFlag::Set);
+                tcod.con
+                    .set_char_background(x, y, COLOR_DARK_WALL, BackgroundFlag::Set);
             } else {
-                tcod.con.set_char_background(x,y,COLOR_DARK_GROUND, BackgroundFlag::Set);
+                tcod.con
+                    .set_char_background(x, y, COLOR_DARK_GROUND, BackgroundFlag::Set);
             }
         }
     }
     tcod.root.flush(); // clean root console to write to
-    // blit the contents of "con" onto the root console and present it
+                       // blit the contents of "con" onto the root console and present it
     blit(
         &tcod.con,
         (0, 0),
