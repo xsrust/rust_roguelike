@@ -346,7 +346,9 @@ fn player_move_or_attack(dx: i32, dy: i32, game: &Game, objects: &mut [Object]) 
     let y = objects[PLAYER].y + dy;
 
     // try to find an attackable target there
-    let target_id = objects.iter().position(|object| object.pos() == (x, y));
+    let target_id = objects
+        .iter()
+        .position(|object| object.fighter.is_some() && object.pos() == (x, y));
 
     // attack if target found, move otherwise
     match target_id {
@@ -420,11 +422,16 @@ fn render_all(tcod: &mut Tcod, game: &mut Game, objects: &[Object], fov_recomput
             .compute_fov(player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO);
     }
 
+    // get the list of objects within the FOV to draw
+    let mut to_draw: Vec<_> = objects
+        .iter()
+        .filter(|o| tcod.fov.is_in_fov(o.x, o.y))
+        .collect();
+    // sort so that non-blocking objects come first
+    to_draw.sort_by(|o1, o2| o1.blocks.cmp(&o2.blocks));
     // Draw all of our objects on the screen
-    for object in objects {
-        if tcod.fov.is_in_fov(object.x, object.y) {
-            object.draw(&mut tcod.con);
-        }
+    for object in &to_draw {
+        object.draw(&mut tcod.con);
     }
 
     // Draw all our tiles onto the screen
